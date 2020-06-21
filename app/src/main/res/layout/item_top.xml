@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/colorAccent"
+    android:orientation="vertical">
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="65dp">
+
+        <ImageView
+            android:id="@+id/img_icon"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentRight="true"
+            android:layout_marginTop="10dp"
+            android:layout_marginRight="30dp"
+            android:layout_marginBottom="10dp"
+            android:scaleType="fitXY"
+            app:srcCompat="@mipmap/ic_launcher" />
+
+        <TextView
+            android:id="@+id/txt_app_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:layout_toLeftOf="@id/img_icon"
+            android:padding="2dp"
+            android:text="نام اپ"
+            android:textColor="@color/white"
+            android:textSize="15sp" />
+
+        <TextView
+            android:id="@+id/txt_charge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="15dp"
+            android:layout_marginRight="5dp"
+            android:layout_toLeftOf="@id/img_icon"
+            android:text="دسته بندی"
+            android:textColor="@color/white"
+            android:textSize="10sp" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/txt_rate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_toLeftOf="@id/img_icon"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        android:paddingBottom="3dp"
+        android:paddingTop="3dp"
+        android:text="امتیاز"
+        android:textColor="@color/white"
+        android:textSize="12sp" />
+
+</LinearLayout>
+
