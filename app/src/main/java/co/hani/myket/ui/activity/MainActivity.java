@@ -1,16 +1,17 @@
 package co.hani.myket.ui.activity;
 
+import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.JsonArray;
+import com.squareup.picasso.Picasso;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,13 +23,22 @@ import co.hani.myket.model.GameModel;
 import co.hani.myket.model.GameResponse;
 import co.hani.myket.network.RequestInterface;
 import co.hani.myket.network.calls.GameApi;
+import co.hani.myket.view.MyLoading;
 import co.hani.myket.view.adapter.GamesAdapter;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+
 public class MainActivity extends AppCompatActivity {
 
+
+    private ImageView imgIcon;
+    private TextView txtTitle;
+    private TextView txtCategory;
+    private TextView txtRating;
+
+    private MyLoading myLoading;
 
     RecyclerView recyclerView;
     GamesAdapter adapter;
@@ -36,15 +46,10 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<GameModel> gameModelList;
     SwipeRefreshLayout swipeRefreshLayout;
     EndlessRecyclerViewScrollListener scrollListener;
-
     RequestInterface requestInterface;
     GameApi gameApi = new GameApi();
-
-
     int offset = 0;
-    //    private MyLoading myLoading;
 
-    //    ArrayList<> arrayList=new ArrayList();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         gameModelList = new ArrayList<>();
         recyclerView.setLayoutManager(linearLayoutManager);
 
-
+        initUi();
         loadData(0);
 
         scrollListener = new EndlessRecyclerViewScrollListener(linearLayoutManager) { // مقدار دهی اسکرول لیسنتر
@@ -71,18 +76,32 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onRefresh() {
 
-                gameModelList = new ArrayList<GameModel>();
-                loadData(offset += 20);
-                scrollListener.resetState();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        gameModelList = new ArrayList<GameModel>();
+                        loadData(offset += 20);
+                        scrollListener.resetState();
+                    }
+                }, 3000);
+
             }
         });
     }
 
-//        Collections.sort(arrayList);
 
+    private void initUi() {
+        myLoading = new MyLoading(this);
+        myLoading.showDialog();
+        imgIcon = findViewById(R.id.img_icon);
+        txtTitle = findViewById(R.id.txt_app_name);
+        txtCategory = findViewById(R.id.txt_category);
+        txtRating = findViewById(R.id.txt_rate);
+    }
 
     public void loadData(int offset) {
 
+        myLoading.hideDialog();
         requestInterface = gameApi.doGetGame();
         requestInterface.getGameList(String.valueOf(offset), "20", "fa").enqueue(new Callback<GameResponse>() {
             @Override
@@ -90,35 +109,20 @@ public class MainActivity extends AppCompatActivity {
 
                 ArrayList<GameModel> tmpArrayList = new ArrayList<>();
                 tmpArrayList = response.body().getAppPlusMetaDataList();
-//                tmpArrayList=ParsArrayToModel(jsonArray);
-                adapter = new GamesAdapter(MainActivity.this, tmpArrayList);
-                recyclerView.setAdapter(adapter);
-                adapter.update(tmpArrayList);
-                swipeRefreshLayout.setRefreshing(false);
 
-//                Collections.sort(tmpArrayList, new Comparator() {
-//                    @Override
-//                    public int compare(Object g1, Object g2) {
-//                        float r1 = ((GameModel) g1).getRating();
-//                        float r2 = ((GameModel) g2).getRating();
-//
-//                        int retval = Float.compare(f1, f2);
-//
-//                        if(retval > 0) {
-//                            System.out.println("f1 is greater than f2");
-//                        } else if(retval < 0) {
-//                            System.out.println("f1 is less than f2");
-//                        } else {
-//                            System.out.println("f1 is equal to f2");
-//                        }
-//
-//
-//
-//                        // ascending order
-//                        return Float.compare(r1,r2);
-//                    }
-//
-//                });
+
+                if (tmpArrayList.size() != 0) {
+                    gameModelList.addAll(tmpArrayList);
+                    adapter = new GamesAdapter(MainActivity.this, tmpArrayList);
+                    recyclerView.setAdapter(adapter);
+                    adapter.update(gameModelList);
+                    setTopGame(getTopGame(gameModelList));
+                    swipeRefreshLayout.setRefreshing(false);
+
+                } else
+                    Toast.makeText(getBaseContext(), "finish", Toast.LENGTH_LONG).show();
+
+
             }
 
             @Override
@@ -131,26 +135,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private ArrayList<GameModel> ParsArrayToModel(JSONArray jsonArray) {
+    private void setTopGame(GameModel topGameModel) {
+        Picasso.with(this).load(topGameModel.getIconPath()).into(imgIcon);
+        txtTitle.setText(topGameModel.getTitle());
+        txtCategory.setText(topGameModel.getCategoryName());
+        txtRating.setText(String.valueOf(topGameModel.getRating()));
+    }
 
-        final ArrayList<GameModel> gameModelList = new ArrayList<>();
+    private GameModel getTopGame(ArrayList<GameModel> gameModelList) {
+        int tmpGame = 0;
+        float topRating;
 
-        for (int i = 0; i < jsonArray.length(); i++) {
-            try {
-                JSONObject jsonObjectData = jsonArray.getJSONObject(i);
-                GameModel gameModel = new GameModel();
-                gameModel.setTitle(jsonObjectData.getString(GameModel.KEY.TITLE));
-                gameModel.setCategoryName(jsonObjectData.getString(GameModel.KEY.CATEGORY_NAME));
-                gameModel.setRating(jsonObjectData.getInt(GameModel.KEY.RATING));
-                gameModel.setIconPath(jsonObjectData.getString(GameModel.KEY.ICON_PATH));
-                gameModelList.add(gameModel);
+        Collections.sort(gameModelList, new Comparator<GameModel>() {
+            @Override
+            public int compare(GameModel lhs, GameModel rhs) {
+                // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
+                return lhs.getRating() > rhs.getRating() ? -1 : (lhs.getRating() < rhs.getRating()) ? 1 : 0;
+            }
+        });
 
-            } catch (Exception ex) {
+        for (int i = 0; i < gameModelList.size() - 1; i++) {
+            topRating = gameModelList.get(0).getRating();
+            if (gameModelList.get(0).getRating() == gameModelList.get(i + 1).getRating()) {
+                if (gameModelList.get(i + 1).getRating() >= topRating)
+                    tmpGame = i + 1;
 
             }
-        }
 
-        return gameModelList;
+        }
+        return gameModelList.get(tmpGame);
     }
 
 }
