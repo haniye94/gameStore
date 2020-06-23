@@ -14,13 +14,11 @@ import com.squareup.picasso.Picasso;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 
 import co.hani.myket.EndlessRecyclerViewScrollListener;
 import co.hani.myket.R;
 import co.hani.myket.model.GameModel;
-import co.hani.myket.model.GameResponse;
+import co.hani.myket.model.GameModelResponse;
 import co.hani.myket.network.RequestInterface;
 import co.hani.myket.network.calls.GameApi;
 import co.hani.myket.view.MyLoading;
@@ -37,62 +35,66 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtTitle;
     private TextView txtCategory;
     private TextView txtRating;
-
     private MyLoading myLoading;
+    private RecyclerView recyclerView;
+    private GamesAdapter adapter;
+    private LinearLayoutManager linearLayoutManager;
+    private ArrayList<GameModel> gameModelList;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private EndlessRecyclerViewScrollListener scrollListener;
+    private RequestInterface requestInterface;
+    private GameApi gameApi = new GameApi();
+    private int offset = 0;
 
-    RecyclerView recyclerView;
-    GamesAdapter adapter;
-    LinearLayoutManager linearLayoutManager;
-    ArrayList<GameModel> gameModelList;
-    SwipeRefreshLayout swipeRefreshLayout;
-    EndlessRecyclerViewScrollListener scrollListener;
-    RequestInterface requestInterface;
-    GameApi gameApi = new GameApi();
-    int offset = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        swipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swr);
-        recyclerView = (RecyclerView) findViewById(R.id.game_recycler);
-        linearLayoutManager = new LinearLayoutManager(getBaseContext(), LinearLayoutManager.VERTICAL, false);
-        gameModelList = new ArrayList<>();
-        recyclerView.setLayoutManager(linearLayoutManager);
 
         initUi();
         loadData(0);
 
-        scrollListener = new EndlessRecyclerViewScrollListener(linearLayoutManager) { // مقدار دهی اسکرول لیسنتر
+        runOnUiThread(new Runnable() {
             @Override
-            public void onLoadMore(int offset, int totalItemsCount, RecyclerView view) {
-                loadData(offset); // کارهایی که باید بعد از اسکرول اتفاق بیافتد. در اینجا لود دادهای دیگر می باشد.
-            }
-        };
-        recyclerView.addOnScrollListener(scrollListener); // ست کردن اسکرول لیسنر به ریسایکلر ویو
-
-
-        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-
-                new Handler().postDelayed(new Runnable() {
+            public void run() {
+                scrollListener = new EndlessRecyclerViewScrollListener(linearLayoutManager) {
                     @Override
-                    public void run() {
-                        gameModelList = new ArrayList<GameModel>();
-                        loadData(offset += 20);
-                        scrollListener.resetState();
+                    public void onLoadMore(int offset, int totalItemsCount, RecyclerView view) {
+                        loadData(offset);
                     }
-                }, 3000);
+                };
+                recyclerView.addOnScrollListener(scrollListener);
 
+                swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameModelList = new ArrayList<GameModel>();
+                                loadData(offset += 20);
+                                scrollListener.resetState();
+                            }
+                        }, 3000);
+
+                    }
+                });
             }
         });
+
     }
 
-
     private void initUi() {
+        swipeRefreshLayout = findViewById(R.id.swr);
+        recyclerView = findViewById(R.id.game_recycler);
+        linearLayoutManager = new LinearLayoutManager(getBaseContext(), LinearLayoutManager.VERTICAL, false);
+        gameModelList = new ArrayList<>();
+        recyclerView.setLayoutManager(linearLayoutManager);
         myLoading = new MyLoading(this);
         myLoading.showDialog();
+        myLoading.setText(getString(R.string.waiting));
         imgIcon = findViewById(R.id.img_icon);
         txtTitle = findViewById(R.id.txt_app_name);
         txtCategory = findViewById(R.id.txt_category);
@@ -101,39 +103,40 @@ public class MainActivity extends AppCompatActivity {
 
     public void loadData(int offset) {
 
-        myLoading.hideDialog();
         requestInterface = gameApi.doGetGame();
-        requestInterface.getGameList(String.valueOf(offset), "20", "fa").enqueue(new Callback<GameResponse>() {
+        requestInterface.getGameList(String.valueOf(offset), "20", "fa").enqueue(new Callback<GameModelResponse>() {
             @Override
-            public void onResponse(Call<GameResponse> call, Response<GameResponse> response) {
+            public void onResponse(Call<GameModelResponse> call, Response<GameModelResponse> response) {
 
-                ArrayList<GameModel> tmpArrayList = new ArrayList<>();
-                tmpArrayList = response.body().getAppPlusMetaDataList();
+                ArrayList<GameModel> newLoadedArrayList;
+                ArrayList<GameModel> sortedArrayList = new ArrayList<>();
+                newLoadedArrayList = response.body().getAppPlusMetaDataList();
 
 
-                if (tmpArrayList.size() != 0) {
-                    gameModelList.addAll(tmpArrayList);
-                    adapter = new GamesAdapter(MainActivity.this, tmpArrayList);
+                if (newLoadedArrayList.size() != 0) {
+                    gameModelList.addAll(newLoadedArrayList);
+                    sortedArrayList.addAll(gameModelList);
+                    adapter = new GamesAdapter(MainActivity.this, newLoadedArrayList);
+                    myLoading.hideDialog();
                     recyclerView.setAdapter(adapter);
                     adapter.update(gameModelList);
-                    setTopGame(getTopGame(gameModelList));
+                    setTopGame(adapter.getTopGame(sortedArrayList));
                     swipeRefreshLayout.setRefreshing(false);
 
                 } else
-                    Toast.makeText(getBaseContext(), "finish", Toast.LENGTH_LONG).show();
+                    Toast.makeText(getBaseContext(), "لیست به پایان رسید!", Toast.LENGTH_LONG).show();
 
 
             }
 
             @Override
-            public void onFailure(Call<GameResponse> call, Throwable t) {
+            public void onFailure(Call<GameModelResponse> call, Throwable t) {
                 Toast.makeText(getBaseContext(), "Error on request", Toast.LENGTH_LONG).show();
 
             }
         });
 
     }
-
 
     private void setTopGame(GameModel topGameModel) {
         Picasso.with(this).load(topGameModel.getIconPath()).into(imgIcon);
@@ -142,29 +145,12 @@ public class MainActivity extends AppCompatActivity {
         txtRating.setText(String.valueOf(topGameModel.getRating()));
     }
 
-    private GameModel getTopGame(ArrayList<GameModel> gameModelList) {
-        int tmpGame = 0;
-        float topRating;
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finishAffinity();
+        System.exit(0);
 
-        Collections.sort(gameModelList, new Comparator<GameModel>() {
-            @Override
-            public int compare(GameModel lhs, GameModel rhs) {
-                // -1 - less than, 1 - greater than, 0 - equal, all inversed for descending
-                return lhs.getRating() > rhs.getRating() ? -1 : (lhs.getRating() < rhs.getRating()) ? 1 : 0;
-            }
-        });
-
-        for (int i = 0; i < gameModelList.size() - 1; i++) {
-            topRating = gameModelList.get(0).getRating();
-            if (gameModelList.get(0).getRating() == gameModelList.get(i + 1).getRating()) {
-                if (gameModelList.get(i + 1).getRating() >= topRating)
-                    tmpGame = i + 1;
-
-            }
-
-        }
-        return gameModelList.get(tmpGame);
     }
-
 }
 

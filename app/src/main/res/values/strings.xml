@@ -1,5 +1,13 @@
 <resources>
     <string name="app_name">مایکت</string>
 
+    <string name="wellcom">به مایکت خوش آمدید : )</string>
+    <string name="waiting">لطفا منتظر بمانید</string>
 
+    <string name="internetNotConnect">
+       شما به اینترنت متصل نیستید
+   </string>
+    <string name="check">
+       بررسی
+   </string>
 </resources>

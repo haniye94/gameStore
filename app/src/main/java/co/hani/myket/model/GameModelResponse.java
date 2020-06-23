@@ -2,7 +2,7 @@ package co.hani.myket.model;
 
 import java.util.ArrayList;
 
-public class GameResponse {
+public class GameModelResponse {
 
     private ArrayList<GameModel> appPlusMetaDataList;
 

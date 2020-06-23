@@ -13,6 +13,8 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import co.hani.myket.R;
 import co.hani.myket.model.GameModel;
@@ -77,9 +79,33 @@ public class GamesAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
     }
-    public void update(ArrayList<GameModel> list) { // تابعی اضافی که خودمان برای تغییر داده های اداپتر ساخته ایم.
-        gameModelArrayList = list; // مقدارهای جدید را به اداپتر ست می کند.
-        notifyDataSetChanged(); // به اداپتر می گوید داده ها تغییر یافته است.
+
+    public void update(ArrayList<GameModel> list) {
+        gameModelArrayList = list;
+        notifyDataSetChanged();
+    }
+
+    public GameModel getTopGame(ArrayList<GameModel> gameModelArrayList) {
+        int tmpGame = 0;
+        float topRating;
+
+        Collections.sort(gameModelArrayList, new Comparator<GameModel>() {
+            @Override
+            public int compare(GameModel lhs, GameModel rhs) {
+                return lhs.getRating() > rhs.getRating() ? -1 : (lhs.getRating() < rhs.getRating()) ? 1 : 0;
+            }
+        });
+
+        for (int i = 0; i < gameModelArrayList.size() - 1; i++) {
+            topRating = gameModelArrayList.get(0).getRating();
+            if (gameModelArrayList.get(0).getRating() == gameModelArrayList.get(i + 1).getRating()) {
+                if (gameModelArrayList.get(i + 1).getRating() >= topRating)
+                    tmpGame = i + 1;
+
+            }
+
+        }
+        return gameModelArrayList.get(tmpGame);
     }
 
 }
