@@ -1,0 +1,3 @@
+store password : mayket
+alias : key()
+password : mayket
