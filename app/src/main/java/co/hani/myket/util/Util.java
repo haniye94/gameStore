@@ -1,4 +1,4 @@
-package co.hani.myket.utils;
+package co.hani.myket.util;
 
 import android.content.Context;
 import android.content.Intent;

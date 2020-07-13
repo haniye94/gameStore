@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">مایکت</string>
+    <string name="app_name">بازی استاز</string>
 
-    <string name="wellcom">به مایکت خوش آمدید : )</string>
+    <string name="wellcom">به بازی استار خوش آمدید : )</string>
     <string name="waiting">لطفا منتظر بمانید</string>
 
     <string name="internetNotConnect">
